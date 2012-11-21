@@ -1,12 +1,7 @@
 name = ApacheSolr Ubercart integration
-description = Integrates the ApacheSolr and Ubercart
+description = Integrates the ApacheSolr and Ubercart for apachesolr search integration 3.x 
 package = Apache Solr
 core = "6.x"
 php = 5.1.4
-
-; Information added by drupal.org packaging script on 2012-01-12
-version = "6.x-1.3"
-core = "6.x"
-project = "apachesolr_ubercart"
-datestamp = "1326387037"
-
+dependencies[] = apachesolr
+dependencies[] = facetapi

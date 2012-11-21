@@ -1,5 +1,16 @@
 <?php
-module_load_include('inc','facetapi','plugins/facetapi/widget');
+/**
+	* Apachesolr Ubercart integration for Apachesolr 6.x-3.x module
+	* Adds Ubercart fields to the search index and results
+	*
+	* TODO: Recreate facet blocks form 6.x-1.3 version, views integration, custom widget
+	*/ 
+	
+/**
+	* Loads wiget Class 
+	*/
+//module_load_include('inc','facetapi','plugins/facetapi/widget');
+
 /**
  * Implementation of hook_apachesolr_update_index().
  *
@@ -33,10 +44,6 @@ function apachesolr_ubercart_apachesolr_index_document_build_node(ApacheSolrDocu
 		if(!empty($node->height)) {
       $document->fs_uc_height = $node->height;
     }
-		//dyw specific
-		if(!empty($node->field_image_cache[0]['filepath'])) {
-			$document->ss_product_image_filepath = $node->field_image_cache[0]['filepath'];
-		}
 		
 		if(module_exists('uc_discounts')) {
 			$discount_price = uc_discounts_get_discounted_price_for_product($node);    
@@ -105,6 +112,8 @@ function apachesolr_ubercart_facetapi_facet_info($searcher_info) {
 
 /**
 	* Implements Hook apachesolr_query_alter
+	* Adds select ubercart fields to the query
+	* must add the vars in template.php to have them appear in search results
  	*/
 function apachesolr_ubercart_apachesolr_query_alter($query) {
 	// Ad fields to the query
@@ -116,6 +125,7 @@ function apachesolr_ubercart_apachesolr_query_alter($query) {
 
 /**
 	* Implements HOOK_facetapi_sort_info
+	* Price sort
 	*/
 function apachesolr_ubercart_facetapi_sort_info() {
   $sorts = array();
@@ -132,8 +142,9 @@ function apachesolr_ubercart_facetapi_sort_info() {
 
 /**
 	* Implements HOOK facetapi_widgets
+	* TODO: needs work, breaks facet admin form
 	*/
-	
+/*
 function apachesolr_ubercart_facetapi_widgets() {
   return array(
     'price_range' => array(
@@ -145,29 +156,26 @@ function apachesolr_ubercart_facetapi_widgets() {
     ),
   );
 }
-
+*/
 /**
 	* Create child class for price widget
 	*/ 
+/*	
 class apachesolrUbercartFacetapiWidgetPrice extends FacetapiWidget {
-   /**
-   * Renders the form.
-   */
+	// renders the form 
   public function execute() {
     $elements = &$this->build[$this->facet['field alias']];
     $elements = drupal_get_form('apachesolr_ubercart_facetapi_price', $elements);
   }
 }
-
+*/
 /**
 	* Define price facet form.
 	*/
+/*	
 function apachesolr_ubercart_facetapi_price($form, &$form_state, $elements) {
 
 }
-
-
-
 
 function apachesolr_ubercart_sort_price(array $a, array $b) {
 	// Build options from facet elements.
@@ -199,7 +207,7 @@ function apachesolr_ubercart_sort_price(array $a, array $b) {
 function apachesolr_ubercart_sort_price_submit($form, &$form_state) {
   $form_state['redirect'] = array($_GET['q'], array('query' => unserialize($form_state['values']['select'])));
 }
-
+*/
 
 /**
  * Implementation of hook_apachesolr_prepare_query();
@@ -224,7 +232,8 @@ function apachesolr_ubercart_theme() {
 
 /**
  * Implementation of hook_views_api().
- 
+ */
+/*
 function apachesolr_ubercart_views_api() {
   return array('api' => '3.0-dev');
 }
