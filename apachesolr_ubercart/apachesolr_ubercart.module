@@ -4,6 +4,7 @@
 	* Adds Ubercart fields to the search index and results
 	*
 	* TODO: Recreate facet blocks form 6.x-1.3 version, views integration, custom widget
+	*
 	*/ 
 	
 /**
