@@ -1,0 +1,231 @@
+<?php
+module_load_include('inc','facetapi','plugins/facetapi/widget');
+/**
+ * Implementation of hook_apachesolr_update_index().
+ *
+ * This adds Ubercart specific fields to the Solr index.
+ */
+function apachesolr_ubercart_apachesolr_index_document_build_node(ApacheSolrDocument $document, $node, $env_id) {
+
+  if (in_array($node->type, module_invoke_all('product_types'))) {
+
+    if(!empty($node->model)) {
+      $document->ss_uc_sku = $node->model;
+    }
+    if (!empty($node->list_price)) {
+      $document->fs_uc_list_price = $node->list_price;
+    }
+    if (!empty($node->sell_price)) {
+      $document->fs_uc_sell_price = $node->sell_price;
+    }
+    if(!empty($node->weight)) {
+      $document->fs_uc_weight = $node->weight;
+    }
+    if(!empty($node->length)) {
+      $document->fs_uc_length = $node->length;
+    }
+    if(!empty($node->width)) {
+      $document->fs_uc_width = $node->width;
+    }
+    if(!empty($node->height)) {
+      $document->fs_uc_height = $node->height;
+    }
+		if(!empty($node->height)) {
+      $document->fs_uc_height = $node->height;
+    }
+		//dyw specific
+		if(!empty($node->field_image_cache[0]['filepath'])) {
+			$document->ss_product_image_filepath = $node->field_image_cache[0]['filepath'];
+		}
+		
+		if(module_exists('uc_discounts')) {
+			$discount_price = uc_discounts_get_discounted_price_for_product($node);    
+		}
+		if($discount_price) {
+			 $document->fs_discount_price = $discount_price;
+		}
+
+  }
+}
+
+/**
+ * Implements hook_facetapi_facet_info().
+ * @param type $searcher_info
+ * @return array $facets
+ */
+function apachesolr_ubercart_facetapi_facet_info($searcher_info) {
+  $facets = array();
+  //ubercart list prices
+  $facets['fs_uc_sell_price'] = array(
+		'label' => t('Filter by Price'),
+    'description' => t('Filter by Price (Selling price)'),
+    'field' => 'fs_uc_sell_price',
+		'field api name' => 'sell_price',
+    //'dividable' => TRUE,
+  );
+  $facets['fs_uc_list_price'] = array(
+		'label' => t('Filter by List Price'),
+    'description' => t('Filter by Price (Listed price)'),
+    'field' => 'fs_uc_list_price',
+		'field api name' => 'list_price',
+    //'dividable' => TRUE,
+  );
+  $facets['ss_uc_sku'] = array(
+	  'label' => t('Filter by Model'),
+    'description' => t('Apache Solr Search: Filter by Model'),
+    'field' => 'ss_uc_sku',
+  );
+  $facets['fs_uc_weight'] = array(
+		'label' => t('Filter by Weight'),
+    'description' => t('Apache Solr Search: Filter by Weight'),
+    'field' => 'fs_uc_weight',
+		'field api name' => 'weight',
+   // 'dividable' => TRUE,
+  );
+  $facets['fs_uc_length'] = array(
+		'label' => t('Filter by Length'),
+    'description' => t('Apache Solr Search: Filter by Length'),
+    'field' => 'fs_uc_length',
+    //'dividable' => TRUE,
+  );
+  $facets['fs_uc_width'] = array(
+		'label' => t('Filter by Width'),
+    'description' => t('Apache Solr Search: Filter by Width'),
+    'field' => 'fs_uc_width',
+    //'dividable' => TRUE,
+  );
+  $facets['fs_uc_height'] = array(
+		'label' => t('Filter by Height'),
+    'description' => t('Apache Solr Search: Filter by Height'),
+    'field' => 'fs_uc_height',
+    //'dividable' => TRUE,
+  );
+  return $facets;
+}
+
+/**
+	* Implements Hook apachesolr_query_alter
+ 	*/
+function apachesolr_ubercart_apachesolr_query_alter($query) {
+	// Ad fields to the query
+	$query->addParam('fl', 'fs_uc_sell_price');
+	$query->addParam('fl', 'ss_uc_sku');
+	$query->addParam('fl', 'ss_product_image_filepath');
+	$query->addParam('fl', 'fs_discount_price');
+}
+
+/**
+	* Implements HOOK_facetapi_sort_info
+	*/
+function apachesolr_ubercart_facetapi_sort_info() {
+  $sorts = array();
+
+  $sorts['sell_price'] = array(
+    'label' => t('Sell Price'),
+    'callback' => 'apachesolr_ubercart_sort_price',
+    'description' => t('Sort by price.'),
+    'weight' => -50,
+  );
+
+  return $sorts;
+}
+
+/**
+	* Implements HOOK facetapi_widgets
+	*/
+	
+function apachesolr_ubercart_facetapi_widgets() {
+  return array(
+    'price_range' => array(
+      'handler' => array(
+        'label' => t('price range'),
+        'class' => 'apachesolrUbercartFacetapiWidgetPrice',
+        'query types' => array('term', 'date'),
+      ),
+    ),
+  );
+}
+
+/**
+	* Create child class for price widget
+	*/ 
+class apachesolrUbercartFacetapiWidgetPrice extends FacetapiWidget {
+   /**
+   * Renders the form.
+   */
+  public function execute() {
+    $elements = &$this->build[$this->facet['field alias']];
+    $elements = drupal_get_form('apachesolr_ubercart_facetapi_price', $elements);
+  }
+}
+
+/**
+	* Define price facet form.
+	*/
+function apachesolr_ubercart_facetapi_price($form, &$form_state, $elements) {
+
+}
+
+
+
+
+function apachesolr_ubercart_sort_price(array $a, array $b) {
+	// Build options from facet elements.
+	  $options = array('' => t('- Select -'));
+	  foreach ($elements as $element) {
+	    if ($element['#active']) {
+	      continue;
+	    }
+	    $options[serialize($element['#query'])] = $element['#markup'] . '(' . $element['#count'] . ')';
+	  }
+
+	  $form['select'] = array(
+	    '#type' => 'select',
+	    '#options' => $options,
+	    '#attributes' => array('class' => array('ctools-auto-submit')),
+	    'default_value' => '',
+	  );
+	  $form['submit'] = array(
+	    '#type' => 'submit',
+	    '#value' => t('Filter'),
+	    '#attributes' => array('class' => array('ctools-use-ajax', 'ctools-auto-submit-click')),
+	  );
+
+	  $form['#attributes']['class'][] = 'example-select-facet';
+
+	  return $form;
+}
+
+function apachesolr_ubercart_sort_price_submit($form, &$form_state) {
+  $form_state['redirect'] = array($_GET['q'], array('query' => unserialize($form_state['values']['select'])));
+}
+
+
+/**
+ * Implementation of hook_apachesolr_prepare_query();
+ */
+function apachesolr_ubercart_apachesolr_prepare_query(&$query) {
+  $query->set_available_sort('fs_uc_sell_price', array(
+    'title' => t('Price'),
+    'default' => 'asc',
+  ));
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function apachesolr_ubercart_theme() {
+  return array(
+    'apachesolr_ubercart_breadcrumb_fs_uc_sell_price' => array(
+      'arguments' => array('type' => 'test'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_views_api().
+ 
+function apachesolr_ubercart_views_api() {
+  return array('api' => '3.0-dev');
+}
+*/
